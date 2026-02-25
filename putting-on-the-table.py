@@ -1,9 +1,8 @@
 def raise_and_release_object(self, table_height_cm):
     """
     Safe NAOqi version.
-    Uses ONLY angleInterpolation (including hand).
-    No async hand calls.
-    Height adaptive: hand goes 40cm above table.
+    Raises hand 40cm above table.
+    Says sentence at release moment.
     """
 
     import time
@@ -18,7 +17,6 @@ def raise_and_release_object(self, table_height_cm):
     if target_height > 135.0:
         target_height = 135.0
 
-    # Linear mapping shoulder pitch
     shoulder_pitch = 1.45 - ((target_height - 90.0) * (0.7 / 30.0))
 
     if shoulder_pitch < 0.5:
@@ -34,17 +32,17 @@ def raise_and_release_object(self, table_height_cm):
     time.sleep(1.0)
 
     # -------------------------
-    # 1️⃣ Close Hand (via joint)
+    # Close Hand (via joint)
     # -------------------------
     self.motion_service.angleInterpolation(
         ["RHand"],
-        [[0.0]],          # 0 = closed
+        [[0.0]],
         [[1.0]],
         True
     )
 
     # -------------------------
-    # 2️⃣ Raise Arm Smoothly
+    # Raise Arm Smoothly
     # -------------------------
     names = [
         "HeadPitch", "HeadYaw",
@@ -53,12 +51,12 @@ def raise_and_release_object(self, table_height_cm):
     ]
 
     angleLists = [
-        [0.15],               # HeadPitch
-        [-0.1],               # HeadYaw
-        [shoulder_pitch],     # ShoulderPitch
-        [-0.15],              # ShoulderRoll
-        [1.2],                # ElbowYaw
-        [1.1]                 # ElbowRoll
+        [0.15],
+        [-0.1],
+        [shoulder_pitch],
+        [-0.15],
+        [1.2],
+        [1.1]
     ]
 
     timeLists = [
@@ -75,7 +73,7 @@ def raise_and_release_object(self, table_height_cm):
     )
 
     # -------------------------
-    # 3️⃣ Rotate Wrist (Palm Down)
+    # Rotate Wrist (Palm Down)
     # -------------------------
     self.motion_service.angleInterpolation(
         ["RWristYaw"],
@@ -84,14 +82,20 @@ def raise_and_release_object(self, table_height_cm):
         True
     )
 
-    time.sleep(0.5)
+    time.sleep(0.3)
 
     # -------------------------
-    # 4️⃣ Open Hand (Release)
+    # Speech BEFORE release
+    # -------------------------
+    self.tts_service.say("Here is what you asked to bring")
+    time.sleep(0.3)
+
+    # -------------------------
+    # Open Hand (Release)
     # -------------------------
     self.motion_service.angleInterpolation(
         ["RHand"],
-        [[1.0]],          # 1 = open
+        [[1.0]],
         [[1.0]],
         True
     )
@@ -99,7 +103,7 @@ def raise_and_release_object(self, table_height_cm):
     time.sleep(0.8)
 
     # -------------------------
-    # 5️⃣ Small Human Micro Lift
+    # Micro Lift
     # -------------------------
     self.motion_service.angleInterpolation(
         ["RShoulderPitch"],
@@ -108,7 +112,7 @@ def raise_and_release_object(self, table_height_cm):
         True
     )
 
-    # Close hand again safely
+    # Close hand again
     self.motion_service.angleInterpolation(
         ["RHand"],
         [[0.0]],
@@ -117,7 +121,7 @@ def raise_and_release_object(self, table_height_cm):
     )
 
     # -------------------------
-    # 6️⃣ Smooth Return to Neutral
+    # Return to Neutral
     # -------------------------
     names_return = [
         "HeadPitch", "HeadYaw",
@@ -149,5 +153,4 @@ def raise_and_release_object(self, table_height_cm):
         names_return, angleLists_return, timeLists_return, True
     )
 
-    # Extra safety pause so script does not exit immediately
     time.sleep(1.0)
